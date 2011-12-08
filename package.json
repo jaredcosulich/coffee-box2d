@@ -1,7 +1,7 @@
 {
-    "name" : "box2d",
+    "name" : "coffee-box2d",
     "version" : "1.0.0",
-    "description" : "2Dc physics engine",
+    "description" : "2Dd physics engine",
     "homepage" : "http://github.com/jadell/box2dnode",
     "author": {
     	"name" : "Josh Adell",
