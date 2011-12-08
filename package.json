@@ -1,10 +1,10 @@
 {
-	"name" : "coffee-box2d",
-	"version" : "0.0.1",
-	"description" : "2Dx physics engine",
+	"name" : "box2d",
+	"version" : "1.0.0",
+	"description" : "2Da physics engine",
 	"homepage" : "http://github.com/jadell/box2dnode",
 	"author": {
-		"name" : "Josh Adelly",
+		"name" : "Josh Adell",
 		"email" : "josh.adell@gmail.com",
 		"url" : "http://everymansoftware.blogspot.com/"
 	},
