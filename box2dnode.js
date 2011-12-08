@@ -20,7 +20,8 @@
 
 
 
-exports.b2Settings = b2Settings = Class.create();
+var b2Settings = Class.create();
+exports.b2Settings = b2Settings;
 b2Settings.prototype = {
 
 
