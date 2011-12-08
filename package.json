@@ -8,7 +8,7 @@
     	"email" : "josh.adell@gmail.com",
     	"url" : "http://everymansoftware.blogspot.com/"
     },
-    "main" : "lib/box2d.js",
+    "main" : ["lib/b2Settings.js", "lib/b2Vec2.js"],
     "ender": "lib/ender.js",
     "directories": { "lib": "lib" },
     "engines" : ["node"]
