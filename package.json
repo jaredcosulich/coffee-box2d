@@ -8,6 +8,7 @@
     	"email" : "josh.adell@gmail.com",
     	"url" : "http://everymansoftware.blogspot.com/"
     },
+    "main" : "lib/b2Settings.js",
     "ender": "lib/ender.js",
     "directories": { "lib": "lib" },
     "engines" : ["node"]
