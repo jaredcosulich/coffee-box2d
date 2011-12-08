@@ -14,28 +14,29 @@
 # misrepresented the original software.
 # 3. This notice may not be removed or altered from any source distribution.
 
-exports.b2Settings = class b2Settings
-    USHRT_MAX: 0x0000ffff
-    b2_pi: Math.PI
-    b2_massUnitsPerKilogram: 1.0
-    b2_timeUnitsPerSecond: 1.0
-    b2_lengthUnitsPerMeter: 30.0
-    b2_maxManifoldPoints: 2
-    b2_maxShapesPerBody: 64
-    b2_maxPolyVertices: 8
-    b2_maxProxies: 1024
-    b2_maxPairs: 8 * b2Settings.b2_maxProxies
-    b2_linearSlop: 0.005 * b2Settings.b2_lengthUnitsPerMeter
-    b2_angularSlop: 2.0 / 180.0 * b2Settings.b2_pi
-    b2_velocityThreshold: 1.0 * b2Settings.b2_lengthUnitsPerMeter / b2Settings.b2_timeUnitsPerSecond
-    b2_maxLinearCorrection: 0.2 * b2Settings.b2_lengthUnitsPerMeter
-    b2_maxAngularCorrection: 8.0 / 180.0 * b2Settings.b2_pi
-    b2_contactBaumgarte: 0.2
-    b2_timeToSleep: 0.5 * b2Settings.b2_timeUnitsPerSecond
-    b2_linearSleepTolerance: 0.01 * b2Settings.b2_lengthUnitsPerMeter / b2Settings.b2_timeUnitsPerSecond
-    b2_angularSleepTolerance: 2.0 / 180.0 / b2Settings.b2_timeUnitsPerSecond
+exports.b2Settings = b2Settings = class b2Settings
     b2Assert: (a) ->
         if (!a)
             vnullVec
             nullVec.x++
+
+b2Settings.USHRT_MAX = 0x0000ffff
+b2Settings.b2_pi = Math.PI
+b2Settings.b2_massUnitsPerKilogram = 1.0
+b2Settings.b2_timeUnitsPerSecond = 1.0
+b2Settings.b2_lengthUnitsPerMeter = 30.0
+b2Settings.b2_maxManifoldPoints = 2
+b2Settings.b2_maxShapesPerBody = 64
+b2Settings.b2_maxPolyVertices = 8
+b2Settings.b2_maxProxies = 1024
+b2Settings.b2_maxPairs = 8 * b2Settings.b2_maxProxies
+b2Settings.b2_linearSlop = 0.005 * b2Settings.b2_lengthUnitsPerMeter
+b2Settings.b2_angularSlop = 2.0 / 180.0 * b2Settings.b2_pi
+b2Settings.b2_velocityThreshold = 1.0 * b2Settings.b2_lengthUnitsPerMeter / b2Settings.b2_timeUnitsPerSecond
+b2Settings.b2_maxLinearCorrection = 0.2 * b2Settings.b2_lengthUnitsPerMeter
+b2Settings.b2_maxAngularCorrection = 8.0 / 180.0 * b2Settings.b2_pi
+b2Settings.b2_contactBaumgarte = 0.2
+b2Settings.b2_timeToSleep = 0.5 * b2Settings.b2_timeUnitsPerSecond
+b2Settings.b2_linearSleepTolerance = 0.01 * b2Settings.b2_lengthUnitsPerMeter / b2Settings.b2_timeUnitsPerSecond
+b2Settings.b2_angularSleepTolerance = 2.0 / 180.0 / b2Settings.b2_timeUnitsPerSecond
 		
