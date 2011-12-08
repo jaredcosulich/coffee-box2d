@@ -1,12 +1,12 @@
 {
-	"name" : "coffee-box2d",
-	"version" : "0.0.1",
+	"name" : "box2d",
+	"version" : "1.0.0",
 	"description" : "2D physics engine",
-	"homepage" : "http://github.com/jaredcosulich/coffee-box2d",
+	"homepage" : "http://github.com/jadell/box2dnode",
 	"author": {
-		"name" : "Jared Cosulich",
-		"email" : "jared@irrationaldesign.com",
-		"url" : "http://jaredcosulich.wordpress.com/"
+		"name" : "Josh Adell",
+		"email" : "josh.adell@gmail.com",
+		"url" : "http://everymansoftware.blogspot.com/"
 	},
 	"main" : "./box2dnode",
 	"engines" : ["node"]
