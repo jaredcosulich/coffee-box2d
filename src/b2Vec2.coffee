@@ -23,7 +23,7 @@ exports.b2Vec2 = b2Vec2 = class b2Vec2
 
 	initialize: (x_, y_) -> 
 	    @x = x_ 
-	    @y=y_
+	    @y = y_
 
 	SetZero: () ->
 	    @x = 0.0
@@ -34,8 +34,8 @@ exports.b2Vec2 = b2Vec2 = class b2Vec2
         @y = y_
         
     SetV: (v) -> 
-        @x=v.x
-        @y=v.y
+        @x = v.x
+        @y = v.y
   
     Negative: () ->
         new b2Vec2(-@x, -@y)
@@ -56,7 +56,7 @@ exports.b2Vec2 = b2Vec2 = class b2Vec2
         @y *= a
   
     MulM: (A) ->
-          tX = @x
+        tX = @x
         @x = A.col1.x * tX + A.col2.x * @y
         @y = A.col1.y * tX + A.col2.y * @y
   
