@@ -1,6 +1,6 @@
 {
 	"name" : "box2d",
-	"version" : "1.0.0",
+	"version" : "1.1.0",
 	"description" : "2D physics engine",
 	"homepage" : "http://github.com/jadell/box2dnode",
 	"author": {
