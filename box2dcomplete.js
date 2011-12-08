@@ -5221,7 +5221,7 @@ b2Body.prototype =
 	m_invMass: null,
 	m_I: null,
 	m_invI: null,
-
+ 
 	m_linearDamping: null,
 	m_angularDamping: null,
 
