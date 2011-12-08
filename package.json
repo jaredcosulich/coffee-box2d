@@ -1,12 +1,12 @@
 {
     "name" : "box2d",
     "version" : "1.0.0",
-    "description" : "2Dd physics engine",
-    "homepage" : "http://github.com/jadell/box2dnode",
+    "description" : "2D physics engine",
+    "homepage" : "http://github.com/jaredcosulich/coffee-box2d",
     "author": {
-    	"name" : "Josh Adell",
-    	"email" : "josh.adell@gmail.com",
-    	"url" : "http://everymansoftware.blogspot.com/"
+    	"name" : "Jared Cosulich",
+    	"email" : "jared@irrationaldesign.com",
+    	"url" : "http://jaredcosulich.wordpress.com/"
     },
     "main" : ["lib/b2Settings.js", "lib/b2Vec2.js"],
     "ender": "lib/ender.js",
