@@ -1,10 +1,10 @@
 {
 	"name" : "box2d",
 	"version" : "1.0.0",
-	"description" : "2Dy physics engine",
+	"description" : "2D physics engine",
 	"homepage" : "http://github.com/jadell/box2dnode",
 	"author": {
-		"name" : "Josh Adellx",
+		"name" : "Josh Adell",
 		"email" : "josh.adell@gmail.com",
 		"url" : "http://everymansoftware.blogspot.com/"
 	},
