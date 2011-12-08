@@ -76,12 +76,12 @@ exports.b2Vec2 = b2Vec2 = class b2Vec2
         @y = s * tX
   
     MinV: (b) ->
-        @x = @x < b.x ? @x : b.x
-        @y = @y < b.y ? @y : b.y
+        if @x = @x < b.x then @x else b.x
+        if @y = @y < b.y then @y else b.y
   
     MaxV: (b) ->
-        @x = @x > b.x ? @x : b.x
-        @y = @y > b.y ? @y : b.y
+        if @x = @x > b.x then @x else b.x
+        if @y = @y > b.y then @y else b.y
   
     Abs: () ->
         @x = Math.abs(@x)
@@ -101,6 +101,6 @@ exports.b2Vec2 = b2Vec2 = class b2Vec2
     IsValid: () ->
         return b2Math.b2IsValid(@x) && b2Math.b2IsValid(@y)
   
-#   
-# b2Vec2.Make = (x_, y_) ->
-#   return new b2Vec2(x_, y_)
+  
+b2Vec2.Make = (x_, y_) ->
+    return new b2Vec2(x_, y_)
