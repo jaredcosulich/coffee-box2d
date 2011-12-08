@@ -1,5 +1,5 @@
 {
-    "name" : "coffee-box2d",
+    "name" : "box2d",
     "version" : "1.0.0",
     "description" : "2Dd physics engine",
     "homepage" : "http://github.com/jadell/box2dnode",
