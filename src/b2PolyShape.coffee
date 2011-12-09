@@ -157,7 +157,7 @@ exports.b2PolyShape = b2PolyShape = class b2PolyShape extends b2Shape
         for  i in [0...@m_vertexCount]
         	@m_normals[i] =  new b2Vec2()
         	i1 = i
-        	i2 = i + 1 < @m_vertexCount ? i + 1 : 0
+        	i2 = if i + 1 < @m_vertexCount then i + 1 else 0
         	@m_normals[i].x = @m_vertices[i2].y - @m_vertices[i1].y
         	@m_normals[i].y = -(@m_vertices[i2].x - @m_vertices[i1].x)
         	@m_normals[i].Normalize()
@@ -165,7 +165,7 @@ exports.b2PolyShape = b2PolyShape = class b2PolyShape extends b2Shape
         # Ensure the polygon in convex. TODO_ERIN compute convex hull.
         for i in [0...@m_vertexCount]
         	i1 = i
-        	i2 = i + 1 < @m_vertexCount ? i + 1 : 0
+        	i2 = if i + 1 < @m_vertexCount then i + 1 else 0
 
         @m_R.SetM(@m_body.m_R)
         @m_position.x = @m_body.m_position.x + (@m_R.col1.x * @m_localCentroid.x + @m_R.col2.x * @m_localCentroid.y)
@@ -198,6 +198,8 @@ exports.b2PolyShape = b2PolyShape = class b2PolyShape extends b2Shape
         	@m_body.Freeze()
 
 
+b2PolyShape.tempVec = new b2Vec2()
+b2PolyShape.tAbsR = new b2Mat22()
 
 
 
