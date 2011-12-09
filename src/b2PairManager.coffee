@@ -73,6 +73,40 @@ exports.b2PairManager = b2PairManager = class b2PairManager
     	@ValidateBuffer() if b2BroadPhase.s_validate
 
 
+    Commit: () ->
+        removeCount = 0
+
+        proxies = @m_broadPhase.m_proxyPool
+
+        for i in [0...@m_pairBufferCount]
+            pair = @Find(@m_pairBuffer[i].proxyId1, @m_pairBuffer[i].proxyId2)
+            pair.ClearBuffered()
+
+            proxy1 = proxies[ pair.proxyId1 ]
+            proxy2 = proxies[ pair.proxyId2 ]
+
+            if pair.IsRemoved()
+            	# It is possible a pair was added then removed before a commit. Therefore,
+            	# we should be careful not to tell the user the pair was removed when the
+            	# the user didn't receive a matching add.
+            	@m_callback.PairRemoved(proxy1.userData, proxy2.userData, pair.userData) if pair.IsFinal() == true
+
+            	# Store the ids so we can actually remove the pair below.
+            	@m_pairBuffer[removeCount].proxyId1 = pair.proxyId1
+            	@m_pairBuffer[removeCount].proxyId2 = pair.proxyId2
+            	++removeCount
+            else
+            	if pair.IsFinal() == false
+            		pair.userData = @m_callback.PairAdded(proxy1.userData, proxy2.userData)
+            		pair.SetFinal()
+
+        @RemovePair(@m_pairBuffer[i].proxyId1, @m_pairBuffer[i].proxyId2) for i in [0...removeCount]
+
+        @m_pairBufferCount = 0
+
+        @ValidateTable() if b2BroadPhase.s_validate
+
+
 
 ###
 var b2PairManager = Class.create()

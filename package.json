@@ -17,7 +17,9 @@
         "lib/b2MassData.js", 
         "lib/b2CollisionFilter.js",
         "lib/b2AABB.js", 
-        "lib/b2World.js", 
+        "lib/b2OBB.js",
+        "lib/b2World.js",
+        "lib/b2Island.js", 
         "lib/b2BroadPhase.js", 
         "lib/b2ShapeDef.js", 
         "lib/b2Shape.js", 
@@ -34,7 +36,8 @@
         "lib/b2BodyDef.js",
         "lib/b2BoxDef.js",
         "lib/b2Body.js",
-        "lib/b2CircleShape.js"
+        "lib/b2CircleShape.js",
+        "lib/b2PolyShape.js"
     ],
     "ender": "lib/ender.js",
     "directories": { "lib": "lib" },

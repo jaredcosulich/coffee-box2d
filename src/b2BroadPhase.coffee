@@ -107,7 +107,7 @@ exports.b2BroadPhase = b2BroadPhase = class b2BroadPhase
 
     	return b2Math.b2Max(dX, dY) < 0.0
     
-
+    Commit: () -> @m_pairManager.Commit()
 
 
 

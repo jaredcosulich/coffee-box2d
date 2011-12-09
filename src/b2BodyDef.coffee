@@ -46,7 +46,7 @@ exports.b2BodyDef = b2BodyDef = class b2BodyDef
         
     AddShape: (shape) ->
         for i in [0..b2Settings.b2_maxShapesPerBody]
-            if @shapes[i] == null
+            unless @shapes[i]?
                 @shapes[i] = shape
                 break 
 

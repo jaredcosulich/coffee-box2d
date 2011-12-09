@@ -116,6 +116,9 @@ exports.b2Body = b2Body = class b2Body
 
         @m_userData = bd.userData
         
+        
+    # Get the list of all shapes attached to this body.
+    GetShapeList: () -> return @m_shapeList
 
 
 

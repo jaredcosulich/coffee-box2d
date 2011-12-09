@@ -31,16 +31,43 @@ exports.b2Shape = b2Shape = class b2Shape
         @m_maskBits = def.maskBits
         @m_groupIndex = def.groupIndex
 
+    TestPoint: (p) -> return false
+
+    GetUserData: () -> return @m_userData
+
+    GetType: () -> return @m_type
+    
+    # Get the parent body of this shape.
+    GetBody: () -> return @m_body
+    
+    GetPosition: () -> return @m_position
+    
+    GetRotationMatrix: () -> return @m_R
+    
+    # Remove and then add proxy from the broad-phase.
+    # this is used to refresh the collision filters.
+    ResetProxy: (broadPhase) ->
+
+    # Get the next shape in the parent body's shape list.
+    GetNext: () -> return @m_next
+    
+
         
 b2Shape.Create = (def, body, center) ->
     switch def.type
         when b2Shape.e_circleShape
             new b2CircleShape(def, body, center)
-        when b2Shape.e_polyShape
+        when b2Shape.e_boxShape, b2Shape.e_polyShape
             new b2PolyShape(def, body, center)
         else 
             null
 
+b2Shape.e_unknownShape = -1
+b2Shape.e_circleShape = 0
+b2Shape.e_boxShape = 1
+b2Shape.e_polyShape = 2
+b2Shape.e_meshShape = 3
+b2Shape.e_shapeTypeCount = 4
 
 
 ###
