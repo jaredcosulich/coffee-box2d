@@ -17,23 +17,17 @@ misrepresented the original software.
 ###
 
 
-# A manifold for two touching convex shapes.
-exports.b2AABB = b2AABB = class b2AABB
-    minVertex: new b2Vec2()
-    maxVertex: new b2Vec2()
+exports.b2TimeStep = b2TimeStep = class b2TimeStep
+    dt: null
+    inv_dt: null
+    iterations: 0
 
-    constructor: () ->
-        @minVertex = new b2Vec2()
-        @maxVertex = new b2Vec2()
 
-    IsValid: () ->
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX -= @minVertex.x
-        dY -= @minVertex.y
-        valid = (dX >= 0.0 && dY >= 0.0)
-        valid = (valid && @minVertex.IsValid() && @maxVertex.IsValid())
-        return valid
-
+###
+var b2TimeStep = Class.create();
+b2TimeStep.prototype = 
+{
+	dt: null,
+	inv_dt: null,
+	iterations: 0,
+	initialize: function() {}};

@@ -16,24 +16,21 @@ misrepresented the original software.
 3. This notice may not be removed or altered from any source distribution.
 ###
 
+exports.b2PairCallback = b2PairCallback = class b2PairCallback
+    PairAdded: (proxyUserData1, proxyUserData2) -> return null
+    PairRemoved: (proxyUserData1, proxyUserData2, pairUserData) ->
 
-# A manifold for two touching convex shapes.
-exports.b2AABB = b2AABB = class b2AABB
-    minVertex: new b2Vec2()
-    maxVertex: new b2Vec2()
 
-    constructor: () ->
-        @minVertex = new b2Vec2()
-        @maxVertex = new b2Vec2()
+###
+var b2PairCallback = Class.create();
+b2PairCallback.prototype = 
+{
+	//virtual ~b2PairCallback() {}
 
-    IsValid: () ->
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX -= @minVertex.x
-        dY -= @minVertex.y
-        valid = (dX >= 0.0 && dY >= 0.0)
-        valid = (valid && @minVertex.IsValid() && @maxVertex.IsValid())
-        return valid
+	// This returns the new pair user data.
+	PairAdded: function(proxyUserData1, proxyUserData2){return null},
 
+	// This should free the pair's user data. In extreme circumstances, it is possible
+	// this will be called with null pairUserData because the pair never existed.
+	PairRemoved: function(proxyUserData1, proxyUserData2, pairUserData){},
+	initialize: function() {}};

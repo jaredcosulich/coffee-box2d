@@ -17,23 +17,43 @@ misrepresented the original software.
 ###
 
 
-# A manifold for two touching convex shapes.
-exports.b2AABB = b2AABB = class b2AABB
-    minVertex: new b2Vec2()
-    maxVertex: new b2Vec2()
-
+exports.b2Proxy = b2Proxy = class b2Proxy
     constructor: () ->
-        @minVertex = new b2Vec2()
-        @maxVertex = new b2Vec2()
+    	@lowerBounds = [(0), (0)]
+    	@upperBounds = [(0), (0)]
 
-    IsValid: () ->
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX -= @minVertex.x
-        dY -= @minVertex.y
-        valid = (dX >= 0.0 && dY >= 0.0)
-        valid = (valid && @minVertex.IsValid() && @maxVertex.IsValid())
-        return valid
+    GetNext: () -> return @lowerBounds[0]
+    SetNext: (next) -> @lowerBounds[0] = next
 
+    IsValid: () -> return @overlapCount != b2BroadPhase.b2_invalid
+
+    lowerBounds: [(0), (0)]
+    upperBounds: [(0), (0)]
+    overlapCount: 0
+    timeStamp: 0
+
+    userData: null
+        
+
+
+###
+var b2Proxy = Class.create()
+b2Proxy.prototype = {
+	GetNext: function(){ return @lowerBounds[0] },
+	SetNext: function(next) { @lowerBounds[0] = next },
+
+	IsValid: function(){ return @overlapCount != b2BroadPhase.b2_invalid },
+
+	lowerBounds: [(0), (0)],
+	upperBounds: [(0), (0)],
+	overlapCount: 0,
+	timeStamp: 0,
+
+	userData: null,
+
+	initialize: function() {
+		// initialize instance variables for references
+		@lowerBounds = [(0), (0)]
+		@upperBounds = [0), (0)]
+		//
+}}

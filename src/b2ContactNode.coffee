@@ -17,23 +17,19 @@ misrepresented the original software.
 ###
 
 
-# A manifold for two touching convex shapes.
-exports.b2AABB = b2AABB = class b2AABB
-    minVertex: new b2Vec2()
-    maxVertex: new b2Vec2()
+exports.b2ContactNode = b2ContactNode = class b2ContactNode
+    other: null
+    contact: null
+    prev: null
+    next: null
+    
 
-    constructor: () ->
-        @minVertex = new b2Vec2()
-        @maxVertex = new b2Vec2()
-
-    IsValid: () ->
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX = @maxVertex.x
-        dY = @maxVertex.y
-        dX -= @minVertex.x
-        dY -= @minVertex.y
-        valid = (dX >= 0.0 && dY >= 0.0)
-        valid = (valid && @minVertex.IsValid() && @maxVertex.IsValid())
-        return valid
-
+###
+var b2ContactNode = Class.create();
+b2ContactNode.prototype = 
+{
+	other: null,
+	contact: null,
+	prev: null,
+	next: null,
+	initialize: function() {}};
