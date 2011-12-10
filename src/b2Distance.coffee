@@ -1,3 +1,9 @@
+exports.b2Distance = b2Distance = class b2Distance
+    
+
+b2Distance.g_GJK_Iterations = 0;
+
+
 ###
 var b2Distance = Class.create();
 b2Distance.prototype = 

@@ -1,3 +1,6 @@
+
+exports.ClipVertex = ClipVertex = class ClipVertex
+
 ###
 
 var ClipVertex = Class.create();

@@ -1,3 +1,7 @@
+
+exports.Features = Features = class Features
+    
+
 ###
 // We use contact ids to facilitate warm starting.
 var Features = Class.create();
