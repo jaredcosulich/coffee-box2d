@@ -114,5 +114,129 @@ exports.b2Island = b2Island = class b2Island
         @m_joints[i] = null for i in [0...jointCapacity]
 	
         @m_allocator = allocator
+ 
+    Clear: () ->
+        @m_bodyCount = 0
+        @m_contactCount = 0
+        @m_jointCount = 0
+
+    Solve: (step, gravity) ->
+        for i in [0...@m_bodyCount]
+            b = @m_bodies[i]
+
+            continue if (b.m_invMass == 0.0)
+
+            b.m_linearVelocity.Add( b2Math.MulFV(step.dt, b2Math.AddVV(gravity, b2Math.MulFV(b.m_invMass, b.m_force))))
+            b.m_angularVelocity += step.dt * b.m_invI * b.m_torque
+
+            b.m_linearVelocity.Multiply(b.m_linearDamping)
+            b.m_angularVelocity *= b.m_angularDamping
+
+            # Store positions for conservative advancement.
+            b.m_position0.SetV(b.m_position)
+            b.m_rotation0 = b.m_rotation
+
+        contactSolver = new b2ContactSolver(@m_contacts, @m_contactCount, @m_allocator)
+
+        # Pre-solve
+        contactSolver.PreSolve()
+
+        @m_joints[i].PrepareVelocitySolver() for i in [0...@m_jointCount]
+
+        # @Solve velocity constraints.
+        for i in [0...step.iterations]
+        	contactSolver.SolveVelocityConstraints()
+        	@m_joints[j].SolveVelocityConstraints(step) for j in [0...@m_jointCount]
+
+        # Integrate positions.
+        for i in [0...@m_bodyCount]
+        	b = @m_bodies[i]
+
+        	continue if (b.m_invMass == 0.0)
+	
+        	b.m_position.x += step.dt * b.m_linearVelocity.x
+        	b.m_position.y += step.dt * b.m_linearVelocity.y
+        	b.m_rotation += step.dt * b.m_angularVelocity
+
+        	b.m_R.Set(b.m_rotation)
+
+        @m_joints[i].PreparePositionSolver() for i in [0...@m_jointCount]
+
+        # @Solve position constraints.
+        if (b2World.s_enablePositionCorrection)
+            b2Island.m_positionIterationCount = 0
+            while b2Island.m_positionIterationCount < step.iterations
+                contactsOkay = contactSolver.SolvePositionConstraints(b2Settings.b2_contactBaumgarte)
+
+                jointsOkay = true
+                for i in [0...@m_jointCount]
+                    jointOkay = @m_joints[i].SolvePositionConstraints()
+                    jointsOkay = jointsOkay && jointOkay
+
+                break if (contactsOkay && jointsOkay)
+                ++b2Island.m_positionIterationCount
+
+        # Post-solve.
+        contactSolver.PostSolve()
+
+        # Synchronize shapes and reset forces.
+        for i in [0...@m_bodyCount]
+            b = @m_bodies[i]
+
+            continue if (b.m_invMass == 0.0)
+
+            b.m_R.Set(b.m_rotation)
+
+            b.SynchronizeShapes()
+            b.m_force.Set(0.0, 0.0)
+            b.m_torque = 0.0
+
+    UpdateSleep: (dt) ->
+    	minSleepTime = Number.MAX_VALUE
+
+    	linTolSqr = b2Settings.b2_linearSleepTolerance * b2Settings.b2_linearSleepTolerance
+    	angTolSqr = b2Settings.b2_angularSleepTolerance * b2Settings.b2_angularSleepTolerance
+
+    	for i in [0...@m_bodyCount]
+    		b = @m_bodies[i]
+    		continue if (b.m_invMass == 0.0)
+
+    		if ((b.m_flags & b2Body.e_allowSleepFlag) == 0)
+    			b.m_sleepTime = 0.0
+    			minSleepTime = 0.0
+
+    		if ((b.m_flags & b2Body.e_allowSleepFlag) == 0 || b.m_angularVelocity * b.m_angularVelocity > angTolSqr || b2Math.b2Dot(b.m_linearVelocity, b.m_linearVelocity) > linTolSqr)
+    			b.m_sleepTime = 0.0
+    			minSleepTime = 0.0
+    		else
+    			b.m_sleepTime += dt
+    			minSleepTime = b2Math.b2Min(minSleepTime, b.m_sleepTime)
+
+    	if (minSleepTime >= b2Settings.b2_timeToSleep)
+    		for i in [0...@m_bodyCount]
+    			b = @m_bodies[i]
+    			b.m_flags |= b2Body.e_sleepFlag
+
+    AddBody: (body) -> @m_bodies[@m_bodyCount++] = body
+
+    AddContact: (contact) -> @m_contacts[@m_contactCount++] = contact
+
+    AddJoint: (joint) -> @m_joints[@m_jointCount++] = joint
+
+    m_allocator: null
+
+    m_bodies: null
+    m_contacts: null
+    m_joints: null
+
+    m_bodyCount: 0
+    m_jointCount: 0
+    m_contactCount: 0
+
+    m_bodyCapacity: 0
+    m_contactCapacity: 0
+    m_jointCapacity: 0
+
+    m_positionError: null
         
 b2Island.m_positionIterationCount = 0

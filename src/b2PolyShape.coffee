@@ -194,8 +194,8 @@ exports.b2PolyShape = b2PolyShape = class b2PolyShape extends b2Shape
         else
         	@m_proxyId = b2Pair.b2_nullProxy
 
-        if (@m_proxyId == b2Pair.b2_nullProxy)
-        	@m_body.Freeze()
+        @m_body.Freeze() if (@m_proxyId == b2Pair.b2_nullProxy)
+        	
 
 
 b2PolyShape.tempVec = new b2Vec2()

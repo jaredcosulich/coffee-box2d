@@ -116,12 +116,166 @@ exports.b2Body = b2Body = class b2Body
 
         @m_userData = bd.userData
         
-        
+    # Set the position of the body's origin and rotation (radians).
+    # @ breaks any contacts and wakes the other bodies.
+    SetOriginPosition: (position, rotation) ->
+        return if @IsFrozen()
+
+        @m_rotation = rotation
+        @m_R.Set(@m_rotation)
+        @m_position = b2Math.AddVV(position , b2Math.b2MulMV(@m_R, @m_center))
+
+        @m_position0.SetV(@m_position)
+        @m_rotation0 = @m_rotation
+
+        s = @m_shapeList
+        while s?
+            s.Synchronize(@m_position, @m_R, @m_position, @m_R)
+            s = s.m_next
+
+        @m_world.m_broadPhase.Commit()
+
+    # Get the position of the body's origin. The body's origin does not
+    # necessarily coincide with the center of mass. It depends on how the
+    # shapes are created.
+    GetOriginPosition: () -> return b2Math.SubtractVV(@m_position, b2Math.b2MulMV(@m_R, @m_center))
+
+    # Set the position of the body's center of mass and rotation (radians).
+    # This breaks any contacts and wakes the other bodies.
+    SetCenterPosition: (position, rotation) ->
+        return if @IsFrozen()
+
+        @m_rotation = rotation
+        @m_R.Set(@m_rotation)
+        @m_position.SetV( position )
+
+        @m_position0.SetV(@m_position)
+        @m_rotation0 = @m_rotation
+
+        s = @m_shapeList
+        while s?
+            s.Synchronize(@m_position, @m_R, @m_position, @m_R)
+            s = s.m_next
+
+        @m_world.m_broadPhase.Commit()
+
+    # Get the position of the body's center of mass. The body's center of mass
+    # does not necessarily coincide with the body's origin. It depends on how the
+    # shapes are created.
+    GetCenterPosition: () -> return @m_position
+
+    # Get the rotation in radians.
+    GetRotation: () -> return @m_rotation
+
+    GetRotationMatrix: () -> return @m_R
+
+    # Set/Get the linear velocity of the center of mass.
+    SetLinearVelocity: (v) -> @m_linearVelocity.SetV(v)
+
+    GetLinearVelocity: () -> return @m_linearVelocity
+
+    # Set/Get the angular velocity. 
+    SetAngularVelocity: (w) -> @m_angularVelocity = w
+
+    GetAngularVelocity: () -> return @m_angularVelocity
+
+    # Apply a force at a world point. Additive.
+    ApplyForce: (force, point) -> 
+        if @IsSleeping() == false
+        	@m_force.Add( force )
+        	@m_torque += b2Math.b2CrossVV(b2Math.SubtractVV(point, @m_position), force)
+
+    # Apply a torque. Additive.
+    ApplyTorque: (torque) -> @m_torque += torque if (@IsSleeping() == false)
+
+    # Apply an impulse at a point. @ immediately modifies the velocity.
+    ApplyImpulse: (impulse, point) ->
+        if (@IsSleeping() == false)
+            @m_linearVelocity.Add( b2Math.MulFV(@m_invMass, impulse) )
+            @m_angularVelocity += ( @m_invI * b2Math.b2CrossVV( b2Math.SubtractVV(point, @m_position), impulse)  )
+
+    GetMass: () -> return @m_mass
+
+    GetInertia: () -> return @m_I
+
+    # Get the world coordinates of a point give the local coordinates
+    # relative to the body's center of mass.
+    GetWorldPoint: (localPoint) -> return b2Math.AddVV(@m_position , b2Math.b2MulMV(@m_R, localPoint))
+
+    # Get the world coordinates of a vector given the local coordinates.
+    GetWorldVector: (localVector) -> return b2Math.b2MulMV(@m_R, localVector)
+
+    # Returns a local point relative to the center of mass given a world point.
+    GetLocalPoint: (worldPoint) -> return b2Math.b2MulTMV(@m_R, b2Math.SubtractVV(worldPoint, @m_position))
+
+    # Returns a local vector given a world vector.
+    GetLocalVector: (worldVector) -> return b2Math.b2MulTMV(@m_R, worldVector)
+
+    # Is this body static (immovable)?
+    IsStatic: () -> return (@m_flags & b2Body.e_staticFlag) == b2Body.e_staticFlag
+
+    IsFrozen: () -> return (@m_flags & b2Body.e_frozenFlag) == b2Body.e_frozenFlag
+
+    # Is this body sleeping (not simulating).
+    IsSleeping: () -> return (@m_flags & b2Body.e_sleepFlag) == b2Body.e_sleepFlag
+
+    # You can disable sleeping on this particular body.
+    AllowSleeping: (flag) ->
+        if (flag)
+            @m_flags |= b2Body.e_allowSleepFlag
+        else
+            @m_flags &= ~b2Body.e_allowSleepFlag
+            @WakeUp()
+
+    # Wake up @ body so it will begin simulating.
+    WakeUp: () ->
+        @m_flags &= ~b2Body.e_sleepFlag
+        @m_sleepTime = 0.0
+
+    GetContactList: () -> return @m_contactList
+
+    GetJointList: () -> return @m_jointList
+
+    # Get the next body in the world's body list.
+    GetNext: () -> return @m_next
+
+    GetUserData: () -> return @m_userData
+    
     # Get the list of all shapes attached to this body.
     GetShapeList: () -> return @m_shapeList
 
+    Destroy: () ->
+        s = @m_shapeList
+        while (s)
+            s0 = s
+            s = s.m_next
+            b2Shape.Destroy(s0)
 
+    # Temp mat
+    sMat0: new b2Mat22()
+    
+    SynchronizeShapes: () ->
+        @sMat0.Set(@m_rotation0)
+        s = @m_shapeList
+        while s?
+            s.Synchronize(@m_position0, @sMat0, @m_position, @m_R)
+            s = s.m_next
 
+    QuickSyncShapes: () ->
+        s = @m_shapeList
+        while s?
+            s.QuickSync(@m_position, @m_R)
+            s = s.m_next
+
+    # This is used to prevent connected bodies from colliding.
+    # It may lie, depending on the collideConnected flag.
+    IsConnected: (other) ->
+        jn = @m_jointList
+        while jn?
+            return jn.joint.m_collideConnected == false if (jn.other == other)
+            jn = jn.next
+
+        return false
 
     Freeze: () ->
         @m_flags |= b2Body.e_frozenFlag

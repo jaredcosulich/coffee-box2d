@@ -17,7 +17,7 @@ misrepresented the original software.
 ###
 
 
-exports.b2PolyContact = b2PolyContact = class b2PolyContact
+exports.b2PolyContact = b2PolyContact = class b2PolyContact extends b2Contact
     constructor: (s1, s2) ->
         @m_node1 = new b2ContactNode()
         @m_node2 = new b2ContactNode()

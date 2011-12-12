@@ -1288,7 +1288,7 @@ b2BroadPhase.prototype =
 	// it should be destroyed. Otherwise you may get O(m^2) pairs, where m
 	// is the number of proxies that are out of range.
 	InRange: function(aabb){
-		//var d = b2Math.b2MaxV(b2Math.SubtractVV(aabb.minVertex, this.m_worldAABB.maxVertex), b2Math.SubtractVV(this.m_worldAABB.minVertex, aabb.maxVertex));
+	    //var d = b2Math.b2MaxV(b2Math.SubtractVV(aabb.minVertex, this.m_worldAABB.maxVertex), b2Math.SubtractVV(this.m_worldAABB.minVertex, aabb.maxVertex));
 		var dX;
 		var dY;
 		var d2X;
@@ -8011,38 +8011,38 @@ b2World.prototype =
 				}
 			}
 
-			island.Solve(this.step, this.m_gravity);
-
-			this.m_positionIterationCount = b2Math.b2Max(this.m_positionIterationCount, b2Island.m_positionIterationCount);
-
-			if (this.m_allowSleep)
-			{
-				island.UpdateSleep(dt);
-			}
-
-			// Post solve cleanup.
-			for (var i = 0; i < island.m_bodyCount; ++i)
-			{
-				// Allow static bodies to participate in other islands.
-				b = island.m_bodies[i];
-				if (b.m_flags & b2Body.e_staticFlag)
-				{
-					b.m_flags &= ~b2Body.e_islandFlag;
-				}
-
-				// Handle newly frozen bodies.
-				if (b.IsFrozen() && this.m_listener)
-				{
-					var response = this.m_listener.NotifyBoundaryViolated(b);
-					if (response == b2WorldListener.b2_destroyBody)
-					{
-						this.DestroyBody(b);
-						b = null;
-						island.m_bodies[i] = null;
-					}
-				}
-			}
-		}
+         island.Solve(this.step, this.m_gravity);
+                 
+         this.m_positionIterationCount = b2Math.b2Max(this.m_positionIterationCount, b2Island.m_positionIterationCount);
+                 
+         if (this.m_allowSleep)
+         {
+             island.UpdateSleep(dt);
+         }
+                 
+         // Post solve cleanup.
+         for (var i = 0; i < island.m_bodyCount; ++i)
+         {
+             // Allow static bodies to participate in other islands.
+             b = island.m_bodies[i];
+             if (b.m_flags & b2Body.e_staticFlag)
+             {
+                 b.m_flags &= ~b2Body.e_islandFlag;
+             }
+                 
+             // Handle newly frozen bodies.
+             if (b.IsFrozen() && this.m_listener)
+             {
+                 var response = this.m_listener.NotifyBoundaryViolated(b);
+                 if (response == b2WorldListener.b2_destroyBody)
+                 {
+                     this.DestroyBody(b);
+                     b = null;
+                     island.m_bodies[i] = null;
+                 }
+             }
+         }
+        }
 
 		this.m_broadPhase.Commit();
 

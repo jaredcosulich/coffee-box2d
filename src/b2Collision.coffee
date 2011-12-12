@@ -46,5 +46,239 @@ b2Collision.ClipSegmentToLine = (vOut, vIn, normal, offset) ->
 
     return numOut
 
+b2Collision.EdgeSeparation = (poly1, edge1, poly2) ->
+    vert1s = poly1.m_vertices
+    count2 = poly2.m_vertexCount
+    vert2s = poly2.m_vertices
+
+    # Convert normal from into poly2's frame.
+    normalX = poly1.m_normals[edge1].x
+    normalY = poly1.m_normals[edge1].y
+    tX = normalX
+    tMat = poly1.m_R
+    normalX = tMat.col1.x * tX + tMat.col2.x * normalY
+    normalY = tMat.col1.y * tX + tMat.col2.y * normalY
+
+    normalLocal2X = normalX
+    normalLocal2Y = normalY
+    tMat = poly2.m_R
+    tX = normalLocal2X * tMat.col1.x + normalLocal2Y * tMat.col1.y
+    normalLocal2Y = normalLocal2X * tMat.col2.x + normalLocal2Y * tMat.col2.y
+    normalLocal2X = tX
+
+    # Find support vertex on poly2 for -normal.
+    vertexIndex2 = 0
+    minDot = Number.MAX_VALUE
+    for  i in [0...count2]
+        tVec = vert2s[i]
+        dot = tVec.x * normalLocal2X + tVec.y * normalLocal2Y
+        if (dot < minDot)
+            minDot = dot
+            vertexIndex2 = i
+
+    tMat = poly1.m_R
+    v1X = poly1.m_position.x + (tMat.col1.x * vert1s[edge1].x + tMat.col2.x * vert1s[edge1].y)
+    v1Y = poly1.m_position.y + (tMat.col1.y * vert1s[edge1].x + tMat.col2.y * vert1s[edge1].y)
+
+    tMat = poly2.m_R
+    v2X = poly2.m_position.x + (tMat.col1.x * vert2s[vertexIndex2].x + tMat.col2.x * vert2s[vertexIndex2].y)
+    v2Y = poly2.m_position.y + (tMat.col1.y * vert2s[vertexIndex2].x + tMat.col2.y * vert2s[vertexIndex2].y)
+
+    v2X -= v1X
+    v2Y -= v1Y
+    separation = v2X * normalX + v2Y * normalY
+    return separation
+
+
+b2Collision.FindMaxSeparation = (edgeIndex, poly1, poly2, conservative) ->
+    count1 = poly1.m_vertexCount
+
+    # Vector pointing from the origin of poly1 to the origin of poly2.
+    dX = poly2.m_position.x - poly1.m_position.x
+    dY = poly2.m_position.y - poly1.m_position.y
+
+    dLocal1X = (dX * poly1.m_R.col1.x + dY * poly1.m_R.col1.y)
+    dLocal1Y = (dX * poly1.m_R.col2.x + dY * poly1.m_R.col2.y)
+
+    # Get support vertex hint for our search
+    edge = 0
+    maxDot = -Number.MAX_VALUE
+    for i in [0...count1]
+        dot = (poly1.m_normals[i].x * dLocal1X + poly1.m_normals[i].y * dLocal1Y)
+        if (dot > maxDot)
+            maxDot = dot
+            edge = i
+
+    # Get the separation for the edge normal.
+    s = b2Collision.EdgeSeparation(poly1, edge, poly2)
+    return s if (s > 0.0 && conservative == false)
+
+    # Check the separation for the neighboring edges.
+    prevEdge = edge - 1 >= 0 ? edge - 1 : count1 - 1
+    sPrev = b2Collision.EdgeSeparation(poly1, prevEdge, poly2)
+    return sPrev if (sPrev > 0.0 && conservative == false)
+
+    nextEdge = edge + 1 < count1 ? edge + 1 : 0
+    sNext = b2Collision.EdgeSeparation(poly1, nextEdge, poly2)
+    return sNext if (sNext > 0.0 && conservative == false)
+
+    # Find the best edge and the search direction.
+    bestEdge = 0
+    increment = 0
+    if (sPrev > s && sPrev > sNext)
+        increment = -1
+        bestEdge = prevEdge
+        bestSeparation = sPrev
+    else if (sNext > s)
+        increment = 1
+        bestEdge = nextEdge
+        bestSeparation = sNext
+    else
+        # pointer out
+        edgeIndex[0] = edge
+        return s
+
+    while (true)
+        if (increment == -1)
+            edge = bestEdge - 1 >= 0 ? bestEdge - 1 : count1 - 1
+        else
+            edge = bestEdge + 1 < count1 ? bestEdge + 1 : 0
+
+        s = b2Collision.EdgeSeparation(poly1, edge, poly2)
+        return s if (s > 0.0 && conservative == false)
+
+        if (s > bestSeparation)
+            bestEdge = edge
+            bestSeparation = s
+        else
+            break
+
+    # pointer out
+    edgeIndex[0] = bestEdge
+    return bestSeparation
+
+
 b2Collision.b2CollidePolyTempVec = new b2Vec2()
+b2Collision.b2CollidePoly = (manifold, polyA, polyB, conservative) ->
+    manifold.pointCount = 0
+
+    edgeA = 0
+    edgeAOut = [edgeA]
+    separationA = b2Collision.FindMaxSeparation(edgeAOut, polyA, polyB, conservative)
+    edgeA = edgeAOut[0]
+    return if (separationA > 0.0 && conservative == false)
+
+    edgeB = 0
+    edgeBOut = [edgeB]
+    separationB = b2Collision.FindMaxSeparation(edgeBOut, polyB, polyA, conservative)
+    edgeB = edgeBOut[0]
+    return if (separationB > 0.0 && conservative == false)
+
+    edge1 = 0
+    flip = 0
+    k_relativeTol = 0.98
+    k_absoluteTol = 0.001
+
+    # TODO_ERIN use "radius" of poly for absolute tolerance.
+    if (separationB > k_relativeTol * separationA + k_absoluteTol)
+        poly1 = polyB
+        poly2 = polyA
+        edge1 = edgeB
+        flip = 1
+    else
+        poly1 = polyA
+        poly2 = polyB
+        edge1 = edgeA
+        flip = 0
+
+    incidentEdge = [new ClipVertex(), new ClipVertex()]
+    b2Collision.FindIncidentEdge(incidentEdge, poly1, edge1, poly2)
+
+    count1 = poly1.m_vertexCount
+    vert1s = poly1.m_vertices
+
+    v11 = vert1s[edge1]
+    v12 = if edge1 + 1 < count1 then vert1s[edge1+1] else vert1s[0]
+
+    dvX = v12.x - v11.x
+    dvY = v12.y - v11.y
+
+    sideNormalX = v12.x - v11.x
+    sideNormalY = v12.y - v11.y
+
+    tX = sideNormalX
+    tMat = poly1.m_R
+    sideNormalX = tMat.col1.x * tX + tMat.col2.x * sideNormalY
+    sideNormalY = tMat.col1.y * tX + tMat.col2.y * sideNormalY
+
+    invLength = 1.0 / Math.sqrt(sideNormalX*sideNormalX + sideNormalY*sideNormalY)
+    sideNormalX *= invLength
+    sideNormalY *= invLength
+
+    frontNormalX = sideNormalX
+    frontNormalY = sideNormalY
+    tX = frontNormalX
+    frontNormalX = frontNormalY
+    frontNormalY = -tX
+
+    # Expanded for performance
+    v11X = v11.x
+    v11Y = v11.y
+    tX = v11X
+    tMat = poly1.m_R
+    v11X = tMat.col1.x * tX + tMat.col2.x * v11Y
+    v11Y = tMat.col1.y * tX + tMat.col2.y * v11Y
+    v11X += poly1.m_position.x
+    v11Y += poly1.m_position.y
+    v12X = v12.x
+    v12Y = v12.y
+    tX = v12X
+    tMat = poly1.m_R
+    v12X = tMat.col1.x * tX + tMat.col2.x * v12Y
+    v12Y = tMat.col1.y * tX + tMat.col2.y * v12Y
+    v12X += poly1.m_position.x
+    v12Y += poly1.m_position.y
+
+    frontOffset = frontNormalX * v11X + frontNormalY * v11Y
+    sideOffset1 = -(sideNormalX * v11X + sideNormalY * v11Y)
+    sideOffset2 = sideNormalX * v12X + sideNormalY * v12Y
+
+    # Clip incident edge against extruded edge1 side edges.
+    clipPoints1 = [new ClipVertex(), new ClipVertex()]
+    clipPoints2 = [new ClipVertex(), new ClipVertex()]
+
+    np = 0
+
+    # Clip to box side 1
+    b2Collision.b2CollidePolyTempVec.Set(-sideNormalX, -sideNormalY)
+    np = b2Collision.ClipSegmentToLine(clipPoints1, incidentEdge, b2Collision.b2CollidePolyTempVec, sideOffset1)
+
+    return if (np < 2)
+
+    # Clip to negative box side 1
+    b2Collision.b2CollidePolyTempVec.Set(sideNormalX, sideNormalY)
+    np = b2Collision.ClipSegmentToLine(clipPoints2, clipPoints1,  b2Collision.b2CollidePolyTempVec, sideOffset2)
+
+    return if (np < 2)
+
+    # Now clipPoints2 contains the clipped points.
+    if (flip)
+    	manifold.normal.Set(-frontNormalX, -frontNormalY)
+    else
+    	manifold.normal.Set(frontNormalX, frontNormalY)
+
+    pointCount = 0
+    for i in [0...b2Settings.b2_maxManifoldPoints]
+        tVec = clipPoints2[i].v
+        separation = (frontNormalX * tVec.x + frontNormalY * tVec.y) - frontOffset
+
+        if (separation <= 0.0 || conservative == true)
+            cp = manifold.points[ pointCount ]
+            cp.separation = separation
+            cp.position.SetV( clipPoints2[i].v )
+            cp.id.Set( clipPoints2[i].id )
+            cp.id.features.flip = flip
+            ++pointCount
+
+    manifold.pointCount = pointCount
 

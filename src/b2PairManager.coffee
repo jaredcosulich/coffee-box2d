@@ -18,6 +18,15 @@ misrepresented the original software.
 
 
 exports.b2PairManager = b2PairManager = class b2PairManager
+    m_broadPhase: null
+    m_callback: null
+    m_pairs: null
+    m_freePair: 0
+    m_pairCount: 0
+    m_pairBuffer: null
+    m_pairBufferCount: 0
+    m_hashTable: null
+
     constructor: () ->
         @m_hashTable = new Array(b2Pair.b2_tableCapacity)
         @m_hashTable[i] = b2Pair.b2_nullPair for i in [0...b2Pair.b2_tableCapacity]
@@ -71,8 +80,96 @@ exports.b2PairManager = b2PairManager = class b2PairManager
     	pair.ClearRemoved()
 
     	@ValidateBuffer() if b2BroadPhase.s_validate
+ 
+    # Add a pair and return the new pair. If the pair already exists,
+    # no new pair is created and the old one is returned.
+    AddPair: (proxyId1, proxyId2) ->
+        if (proxyId1 > proxyId2)
+            temp = proxyId1
+            proxyId1 = proxyId2
+            proxyId2 = temp
 
+        hash = b2PairManager.Hash(proxyId1, proxyId2) & b2Pair.b2_tableMask
 
+        pair = pair = this.FindHash(proxyId1, proxyId2, hash)
+
+        return pair if (pair != null)
+
+        pIndex = this.m_freePair
+        pair = this.m_pairs[pIndex]
+        @m_freePair = pair.next
+
+        pair.proxyId1 = proxyId1
+        pair.proxyId2 = proxyId2
+        pair.status = 0
+        pair.userData = null
+        pair.next = this.m_hashTable[hash]
+
+        @m_hashTable[hash] = pIndex
+
+        ++@m_pairCount
+
+        return pair
+
+    # Remove a pair, return the pair's userData.
+    RemovePair: (proxyId1, proxyId2) ->
+        if (proxyId1 > proxyId2)
+            temp = proxyId1
+            proxyId1 = proxyId2
+            proxyId2 = temp
+
+        hash = b2PairManager.Hash(proxyId1, proxyId2) & b2Pair.b2_tableMask
+
+        node = @m_hashTable[hash]
+        pNode = null
+
+        while (node != b2Pair.b2_nullPair)
+            if (b2PairManager.Equals(@m_pairs[node], proxyId1, proxyId2))
+                index = node
+                if (pNode)
+                	pNode.next = @m_pairs[node].next
+                else
+                	@m_hashTable[hash] = @m_pairs[node].next
+
+                pair = @m_pairs[ index ]
+                userData = pair.userData
+
+                # Scrub
+                pair.next = @m_freePair
+                pair.proxyId1 = b2Pair.b2_nullProxy
+                pair.proxyId2 = b2Pair.b2_nullProxy
+                pair.userData = null
+                pair.status = 0
+
+                @m_freePair = index
+                --@m_pairCount
+                return userData
+            else
+                pNode = @m_pairs[node]
+                node = pNode.next
+
+        return null
+
+    Find: (proxyId1, proxyId2) ->
+        if (proxyId1 > proxyId2)
+            vtemp = proxyId1
+            proxyId1 = proxyId2
+            proxyId2 = temp
+
+        hash = b2PairManager.Hash(proxyId1, proxyId2) & b2Pair.b2_tableMask
+
+        return @FindHash(proxyId1, proxyId2, hash)
+
+    FindHash: (proxyId1, proxyId2, hash) ->
+        index = this.m_hashTable[hash]
+
+        while index != b2Pair.b2_nullPair && b2PairManager.Equals(this.m_pairs[index], proxyId1, proxyId2) == false
+        	index = this.m_pairs[index].next
+
+        return null if index == b2Pair.b2_nullPair
+
+        return this.m_pairs[ index ]
+        
     Commit: () ->
         removeCount = 0
 
@@ -107,3 +204,16 @@ exports.b2PairManager = b2PairManager = class b2PairManager
         @ValidateTable() if b2BroadPhase.s_validate
 
 
+b2PairManager.Hash = (proxyId1, proxyId2) ->
+    key = ((proxyId2 << 16) & 0xffff0000) | proxyId1
+    key = ~key + ((key << 15) & 0xFFFF8000)
+    key = key ^ ((key >> 12) & 0x000fffff)
+    key = key + ((key << 2) & 0xFFFFFFFC)
+    key = key ^ ((key >> 4) & 0x0fffffff)
+    key = key * 2057
+    key = key ^ ((key >> 16) & 0x0000ffff)
+    return key
+
+b2PairManager.Equals = (pair, proxyId1, proxyId2) -> return (pair.proxyId1 == proxyId1 && pair.proxyId2 == proxyId2)
+
+b2PairManager.EqualsPair = (pair1, pair2) -> return pair1.proxyId1 == pair2.proxyId1 && pair1.proxyId2 == pair2.proxyId2
