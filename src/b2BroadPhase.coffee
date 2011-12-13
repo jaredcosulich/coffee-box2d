@@ -106,6 +106,11 @@ exports.b2BroadPhase = b2BroadPhase = class b2BroadPhase
         dY = b2Math.b2Max(dY, d2Y)
 
         return b2Math.b2Max(dX, dY) < 0.0
+        
+    # Get a single proxy. Returns NULL if the id is invalid.
+    GetProxy: (proxyId) ->
+        rerturn null if (proxyId == b2Pair.b2_nullProxy || this.m_proxyPool[proxyId].IsValid() == false)
+        return @m_proxyPool[ proxyId ]
 
     # Create and destroy proxies. These call Flush first.
     CreateProxy: (aabb, userData) ->
@@ -215,6 +220,110 @@ exports.b2BroadPhase = b2BroadPhase = class b2BroadPhase
         @IncrementTimeStamp()
 
         return proxyId
+ 
+ 
+    DestroyProxy: (proxyId) ->
+        proxy = @m_proxyPool[ proxyId ]
+        boundCount = 2 * @m_proxyCount
+
+        for axis in [0...2]
+            bounds = @m_bounds[axis]
+
+            lowerIndex = proxy.lowerBounds[axis]
+            upperIndex = proxy.upperBounds[axis]
+            lowerValue = bounds[lowerIndex].value
+            upperValue = bounds[upperIndex].value
+
+            # replace memmove calls
+            tArr = new Array()
+            j = 0
+            tEnd = upperIndex - lowerIndex - 1
+            tBound1
+            tBound2
+
+            # make temp array
+            for j in [0...tEnd]
+                tArr[j] = new b2Bound()
+                tBound1 = tArr[j]
+                tBound2 = bounds[lowerIndex+1+j]
+                tBound1.value = tBound2.value
+                tBound1.proxyId = tBound2.proxyId
+                tBound1.stabbingCount = tBound2.stabbingCount
+
+            # move temp array back in to bounds
+            tEnd = tArr.length
+            tIndex = lowerIndex
+            for j in [0...tEnd]
+                #bounds[tIndex+j] = tArr[j]
+                tBound2 = tArr[j]
+                tBound1 = bounds[tIndex+j]
+                tBound1.value = tBound2.value
+                tBound1.proxyId = tBound2.proxyId
+                tBound1.stabbingCount = tBound2.stabbingCount
+
+            # make temp array
+            tArr = new Array()
+            tEnd = boundCount - upperIndex - 1
+            for j in [0...tEnd]
+                tArr[j] = new b2Bound()
+                tBound1 = tArr[j]
+                tBound2 = bounds[upperIndex+1+j]
+                tBound1.value = tBound2.value
+                tBound1.proxyId = tBound2.proxyId
+                tBound1.stabbingCount = tBound2.stabbingCount
+
+            # move temp array back in to bounds
+            tEnd = tArr.length
+            tIndex = upperIndex-1
+            for j in [0...tEnd]
+                tBound2 = tArr[j]
+                tBound1 = bounds[tIndex+j]
+                tBound1.value = tBound2.value
+                tBound1.proxyId = tBound2.proxyId
+                tBound1.stabbingCount = tBound2.stabbingCount
+
+            # Fix bound indices.
+            tEnd = boundCount - 2
+            index = lowerIndex
+            while index < tEnd
+                proxy2 = @m_proxyPool[ bounds[index].proxyId ]
+                if (bounds[index].IsLower())
+                    proxy2.lowerBounds[axis] = index
+                else
+                    proxy2.upperBounds[axis] = index
+                ++index
+
+            # Fix stabbing count.
+            tEnd = upperIndex - 1
+            index2 = lowerIndex
+            while index2 < tEnd 
+                bounds[index2].stabbingCount--
+                ++index2
+
+            # @Query for pairs to be removed. lowerIndex and upperIndex are not needed.
+            # make lowerIndex and upper output using an array and do @ for others if compiler doesn't pick them up
+            @Query([0], [0], lowerValue, upperValue, bounds, boundCount - 2, axis)
+
+        @m_pairManager.RemoveBufferedPair(proxyId, @m_queryResults[i]) for i in [0...@m_queryResultCount]
+
+        @m_pairManager.Commit()
+
+        # Prepare for next query.
+        @m_queryResultCount = 0
+        @IncrementTimeStamp()
+
+        # Return the proxy to the pool.
+        proxy.userData = null
+        proxy.overlapCount = b2BroadPhase.b2_invalid
+        proxy.lowerBounds[0] = b2BroadPhase.b2_invalid
+        proxy.lowerBounds[1] = b2BroadPhase.b2_invalid
+        proxy.upperBounds[0] = b2BroadPhase.b2_invalid
+        proxy.upperBounds[1] = b2BroadPhase.b2_invalid
+
+        proxy.SetNext(@m_freeProxy)
+        @m_freeProxy = proxyId
+        --@m_proxyCount
+ 
         
     # Call @MoveProxy times like, then when you are done
     # call @Commit to finalized the proxy pairs (for your time step).

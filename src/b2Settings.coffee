@@ -18,10 +18,10 @@ misrepresented the original software.
 
 
 exports.b2Settings = b2Settings = class b2Settings
-    b2Assert: (a) ->
-        if (!a)
-            vnullVec
-            nullVec.x++
+b2Settings.b2Assert = (a) ->
+    if (!a)
+        vnullVec
+        nullVec.x++
 
 b2Settings.USHRT_MAX = 0x0000ffff
 b2Settings.b2_pi = Math.PI
