@@ -215,6 +215,160 @@ exports.b2BroadPhase = b2BroadPhase = class b2BroadPhase
         @IncrementTimeStamp()
 
         return proxyId
+        
+    # Call @MoveProxy times like, then when you are done
+    # call @Commit to finalized the proxy pairs (for your time step).
+    MoveProxy: (proxyId, aabb) ->
+        axis = 0
+        index = 0
+        nextProxyId = 0
+
+        return if (proxyId == b2Pair.b2_nullProxy || b2Settings.b2_maxProxies <= proxyId)
+
+        return if (aabb.IsValid() == false)
+
+        boundCount = 2 * @m_proxyCount
+
+        proxy = @m_proxyPool[ proxyId ]
+        # Get new bound values
+        newValues = new b2BoundValues()
+        @ComputeBounds(newValues.lowerValues, newValues.upperValues, aabb)
+
+        # Get old bound values
+        oldValues = new b2BoundValues()
+        for axis in [0...2]
+            oldValues.lowerValues[axis] = @m_bounds[axis][proxy.lowerBounds[axis]].value
+            oldValues.upperValues[axis] = @m_bounds[axis][proxy.upperBounds[axis]].value
+
+        for axis in [0...2]
+            bounds = @m_bounds[axis]
+
+            lowerIndex = proxy.lowerBounds[axis]
+            upperIndex = proxy.upperBounds[axis]
+
+            lowerValue = newValues.lowerValues[axis]
+            upperValue = newValues.upperValues[axis]
+
+            deltaLower = lowerValue - bounds[lowerIndex].value
+            deltaUpper = upperValue - bounds[upperIndex].value
+
+            bounds[lowerIndex].value = lowerValue
+            bounds[upperIndex].value = upperValue
+
+            # Expanding adds overlaps
+
+            # Should we move the lower bound down?
+            if (deltaLower < 0)
+                index = lowerIndex
+                while (index > 0 && lowerValue < bounds[index-1].value)
+                    bound = bounds[index]
+                    prevBound = bounds[index - 1]
+
+                    prevProxyId = prevBound.proxyId
+                    prevProxy = @m_proxyPool[ prevBound.proxyId ]
+
+                    prevBound.stabbingCount++
+
+                    if (prevBound.IsUpper() == true)
+                        if (@TestOverlap(newValues, prevProxy))
+                            @m_pairManager.AddBufferedPair(proxyId, prevProxyId)
+
+                        prevProxy.upperBounds[axis]++
+                        bound.stabbingCount++
+                    else
+                        prevProxy.lowerBounds[axis]++
+                        bound.stabbingCount--
+
+                    proxy.lowerBounds[axis]--
+
+                    # swap
+                    bound.Swap(prevBound)
+                    --index
+
+            # Should we move the upper bound up?
+            if (deltaUpper > 0)
+                index = upperIndex
+                while (index < boundCount-1 && bounds[index+1].value <= upperValue)
+                    bound = bounds[ index ]
+                    nextBound = bounds[ index + 1 ]
+                    nextProxyId = nextBound.proxyId
+                    nextProxy = @m_proxyPool[ nextProxyId ]
+
+                    nextBound.stabbingCount++
+
+                    if (nextBound.IsLower() == true)
+                        if (@TestOverlap(newValues, nextProxy))
+                            @m_pairManager.AddBufferedPair(proxyId, nextProxyId)
+
+                        nextProxy.lowerBounds[axis]--
+                        bound.stabbingCount++
+                    else
+                        nextProxy.upperBounds[axis]--
+                        bound.stabbingCount--
+
+                    proxy.upperBounds[axis]++
+                    # swap
+                    bound.Swap(nextBound)
+                    index++
+
+            #
+            # Shrinking removes overlaps
+            #
+
+            # Should we move the lower bound up?
+            if (deltaLower > 0)
+                index = lowerIndex
+                while (index < boundCount-1 && bounds[index+1].value <= lowerValue)
+                    bound = bounds[ index ]
+                    nextBound = bounds[ index + 1 ]
+
+                    nextProxyId = nextBound.proxyId
+                    nextProxy = @m_proxyPool[ nextProxyId ]
+
+                    nextBound.stabbingCount--
+
+                    if (nextBound.IsUpper())
+                        if (@TestOverlap(oldValues, nextProxy))
+                            @m_pairManager.RemoveBufferedPair(proxyId, nextProxyId)
+
+                        nextProxy.upperBounds[axis]--
+                        bound.stabbingCount--
+                    else
+                        nextProxy.lowerBounds[axis]--
+                        bound.stabbingCount++
+
+                    proxy.lowerBounds[axis]++
+                    # swap
+                    bound.Swap(nextBound)
+                    index++
+
+            # Should we move the upper bound down?
+            if (deltaUpper < 0)
+                index = upperIndex
+                while (index > 0 && upperValue < bounds[index-1].value)
+                    bound = bounds[index]
+                    prevBound = bounds[index - 1]
+
+                    prevProxyId = prevBound.proxyId
+                    prevProxy = @m_proxyPool[ prevProxyId ]
+
+                    prevBound.stabbingCount--
+
+                    if (prevBound.IsLower() == true)
+                        if (@TestOverlap(oldValues, prevProxy))
+                            @m_pairManager.RemoveBufferedPair(proxyId, prevProxyId)
+
+                        prevProxy.lowerBounds[axis]++
+                        bound.stabbingCount--
+                    else
+                        prevProxy.upperBounds[axis]++
+                        bound.stabbingCount++
+
+                    proxy.upperBounds[axis]--
+                    # swap
+                    bound.Swap(prevBound)
+                    index--
+        
 
     
     Commit: () -> @m_pairManager.Commit()
@@ -242,6 +396,23 @@ exports.b2BroadPhase = b2BroadPhase = class b2BroadPhase
 
         lowerValues[1] = (@m_quantizationFactor.y * (minVertexY - @m_worldAABB.minVertex.y)) & (b2Settings.USHRT_MAX - 1)
         upperValues[1] = ((@m_quantizationFactor.y * (maxVertexY - @m_worldAABB.minVertex.y))& 0x0000ffff) | 1
+
+    # This one is only used for validation.
+    TestOverlapValidate: (p1, p2) ->
+        for axis in [0...2]
+            bounds = @m_bounds[axis]
+            return false if (bounds[p1.lowerBounds[axis]].value > bounds[p2.upperBounds[axis]].value)
+            return false if (bounds[p1.upperBounds[axis]].value < bounds[p2.lowerBounds[axis]].value)
+
+        return true
+
+    TestOverlap: (b, p) ->
+        for axis in [0...2]
+            bounds = @m_bounds[axis]
+            return false if (b.lowerValues[axis] > bounds[p.upperBounds[axis]].value)
+            return false if (b.upperValues[axis] < bounds[p.lowerBounds[axis]].value)
+
+        return true
 
     Query: (lowerQueryOut, upperQueryOut, lowerValue, upperValue, bounds, boundCount, axis) ->
         lowerQuery = b2BroadPhase.BinarySearch(bounds, boundCount, lowerValue)

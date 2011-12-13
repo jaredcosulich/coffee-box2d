@@ -19,7 +19,7 @@ misrepresented the original software.
 
 exports.b2Math = b2Math = class b2Math
 
-b2Math.b2IsValid = (x) -> sFinite(x)
+b2Math.b2IsValid = (x) -> isFinite(x)
 
 b2Math.b2Dot = (a, b) -> a.x * b.x + a.y * b.y
 

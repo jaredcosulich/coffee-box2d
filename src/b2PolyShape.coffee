@@ -196,6 +196,127 @@ exports.b2PolyShape = b2PolyShape = class b2PolyShape extends b2Shape
 
         @m_body.Freeze() if (@m_proxyId == b2Pair.b2_nullProxy)
         	
+    # Temp AABB for Synch function
+    syncAABB: new b2AABB()
+    syncMat: new b2Mat22()
+    Synchronize: (position1, R1, position2, R2) ->
+        # The body transform is copied for convenience.
+        @m_R.SetM(R2)
+        @m_position.x = @m_body.m_position.x + (R2.col1.x * @m_localCentroid.x + R2.col2.x * @m_localCentroid.y)
+        @m_position.y = @m_body.m_position.y + (R2.col1.y * @m_localCentroid.x + R2.col2.y * @m_localCentroid.y)
+
+        return if (@m_proxyId == b2Pair.b2_nullProxy)
+
+        v1 = R1.col1
+        v2 = R1.col2
+        v3 = @m_localOBB.R.col1
+        v4 = @m_localOBB.R.col2
+        @syncMat.col1.x = v1.x * v3.x + v2.x * v3.y
+        @syncMat.col1.y = v1.y * v3.x + v2.y * v3.y
+        @syncMat.col2.x = v1.x * v4.x + v2.x * v4.y
+        @syncMat.col2.y = v1.y * v4.x + v2.y * v4.y
+        @syncMat.Abs()
+        hX = @m_localCentroid.x + @m_localOBB.center.x
+        hY = @m_localCentroid.y + @m_localOBB.center.y
+        centerX = position1.x + (R1.col1.x * hX + R1.col2.x * hY)
+        centerY = position1.y + (R1.col1.y * hX + R1.col2.y * hY)
+        hX = @syncMat.col1.x * @m_localOBB.extents.x + @syncMat.col2.x * @m_localOBB.extents.y
+        hY = @syncMat.col1.y * @m_localOBB.extents.x + @syncMat.col2.y * @m_localOBB.extents.y
+        @syncAABB.minVertex.x = centerX - hX
+        @syncAABB.minVertex.y = centerY - hY
+        @syncAABB.maxVertex.x = centerX + hX
+        @syncAABB.maxVertex.y = centerY + hY
+
+        v1 = R2.col1
+        v2 = R2.col2
+        v3 = @m_localOBB.R.col1
+        v4 = @m_localOBB.R.col2
+        @syncMat.col1.x = v1.x * v3.x + v2.x * v3.y
+        @syncMat.col1.y = v1.y * v3.x + v2.y * v3.y
+        @syncMat.col2.x = v1.x * v4.x + v2.x * v4.y
+        @syncMat.col2.y = v1.y * v4.x + v2.y * v4.y
+        @syncMat.Abs()
+        hX = @m_localCentroid.x + @m_localOBB.center.x
+        hY = @m_localCentroid.y + @m_localOBB.center.y
+        centerX = position2.x + (R2.col1.x * hX + R2.col2.x * hY)
+        centerY = position2.y + (R2.col1.y * hX + R2.col2.y * hY)
+        hX = @syncMat.col1.x * @m_localOBB.extents.x + @syncMat.col2.x * @m_localOBB.extents.y
+        hY = @syncMat.col1.y * @m_localOBB.extents.x + @syncMat.col2.y * @m_localOBB.extents.y
+
+        @syncAABB.minVertex.x = Math.min(@syncAABB.minVertex.x, centerX - hX)
+        @syncAABB.minVertex.y = Math.min(@syncAABB.minVertex.y, centerY - hY)
+        @syncAABB.maxVertex.x = Math.max(@syncAABB.maxVertex.x, centerX + hX)
+        @syncAABB.maxVertex.y = Math.max(@syncAABB.maxVertex.y, centerY + hY)
+
+        broadPhase = @m_body.m_world.m_broadPhase
+        if (broadPhase.InRange(@syncAABB))
+        	broadPhase.MoveProxy(@m_proxyId, @syncAABB)
+        else
+        	@m_body.Freeze()
+
+    QuickSync: (position, R) ->
+        @m_R.SetM(R)
+        @m_position.x = position.x + (R.col1.x * @m_localCentroid.x + R.col2.x * @m_localCentroid.y)
+        @m_position.y = position.y + (R.col1.y * @m_localCentroid.x + R.col2.y * @m_localCentroid.y)
+
+    ResetProxy: (broadPhase) ->
+        return if (@m_proxyId == b2Pair.b2_nullProxy)
+
+        proxy = broadPhase.GetProxy(@m_proxyId)
+
+        broadPhase.DestroyProxy(@m_proxyId)
+        proxy = null
+
+        R = b2Math.b2MulMM(@m_R, @m_localOBB.R)
+        absR = b2Math.b2AbsM(R)
+        h = b2Math.b2MulMV(absR, @m_localOBB.extents)
+        position = b2Math.b2MulMV(@m_R, @m_localOBB.center)
+        position.Add(@m_position)
+
+        aabb = new b2AABB()
+        aabb.minVertex.SetV(position)
+        aabb.minVertex.Subtract(h)
+        aabb.maxVertex.SetV(position)
+        aabb.maxVertex.Add(h)
+
+        if (broadPhase.InRange(aabb))
+            @m_proxyId = broadPhase.CreateProxy(aabb, @)
+        else
+            @m_proxyId = b2Pair.b2_nullProxy
+
+        @m_body.Freeze() if (@m_proxyId == b2Pair.b2_nullProxy)
+
+
+    Support: (dX, dY, out) ->
+      #b2Vec2 dLocal = b2MulT(@m_R, d)
+      dLocalX = (dX*@m_R.col1.x + dY*@m_R.col1.y)
+      dLocalY = (dX*@m_R.col2.x + dY*@m_R.col2.y)
+
+      bestIndex = 0
+      #float32 bestValue = b2Dot(@m_vertices[0], dLocal)
+      bestValue = (@m_coreVertices[0].x * dLocalX + @m_coreVertices[0].y * dLocalY)
+      for i in [0...@m_vertexCount]
+          #float32 value = b2Dot(@m_vertices[i], dLocal)
+          value = (@m_coreVertices[i].x * dLocalX + @m_coreVertices[i].y * dLocalY)
+          if (value > bestValue)
+              bestIndex = i
+              bestValue = value
+
+      #return @m_position + b2Mul(@m_R, @m_vertices[bestIndex])
+      out.Set(    @m_position.x + (@m_R.col1.x * @m_coreVertices[bestIndex].x + @m_R.col2.x * @m_coreVertices[bestIndex].y),
+                  @m_position.y + (@m_R.col1.y * @m_coreVertices[bestIndex].x + @m_R.col2.y * @m_coreVertices[bestIndex].y))
+
+
+    # Local position of the shape centroid in parent body frame.
+    m_localCentroid: new b2Vec2()
+
+    # Local position oriented bounding box. The OBB center is relative to
+    # shape centroid.
+    m_localOBB: new b2OBB()
+    m_vertices: null
+    m_coreVertices: null
+    m_vertexCount: 0
+    m_normals: null
 
 
 b2PolyShape.tempVec = new b2Vec2()

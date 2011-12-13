@@ -67,19 +67,43 @@ exports.b2PairManager = b2PairManager = class b2PairManager
     # We may add a pair that is already in the pair manager and pair buffer.
     # If the added pair is not a new pair, then it must be in the pair buffer (because @RemovePair was called).
     AddBufferedPair: (proxyId1, proxyId2) ->
-    	pair = @AddPair(proxyId1, proxyId2)
+        pair = @AddPair(proxyId1, proxyId2)
 
-    	# If @ pair is not in the pair buffer ...
-    	if pair.IsBuffered() == false
-    		pair.SetBuffered()
-    		@m_pairBuffer[@m_pairBufferCount].proxyId1 = pair.proxyId1
-    		@m_pairBuffer[@m_pairBufferCount].proxyId2 = pair.proxyId2
-    		++@m_pairBufferCount
+        # If @ pair is not in the pair buffer ...
+        if pair.IsBuffered() == false
+            pair.SetBuffered()
+            @m_pairBuffer[@m_pairBufferCount].proxyId1 = pair.proxyId1
+            @m_pairBuffer[@m_pairBufferCount].proxyId2 = pair.proxyId2
+            ++@m_pairBufferCount
 
-    	# Confirm @ pair for the subsequent call to @Commit.
-    	pair.ClearRemoved()
+        # Confirm @ pair for the subsequent call to @Commit.
+        pair.ClearRemoved()
 
-    	@ValidateBuffer() if b2BroadPhase.s_validate
+        @ValidateBuffer() if b2BroadPhase.s_validate
+
+
+    # Buffer a pair for removal.
+    RemoveBufferedPair: (proxyId1, proxyId2) ->
+        #b2Settings.b2Assert(id1 != b2_nullProxy && id2 != b2_nullProxy)
+        #b2Settings.b2Assert(@m_pairBufferCount < b2_maxPairs)
+
+        pair = @Find(proxyId1, proxyId2)
+
+        # The pair never existed. This is legal (due to collision filtering).
+        return unless pair?
+
+        # If this pair is not in the pair buffer ...
+        if (pair.IsBuffered() == false)
+            # This must be an old pair.
+            pair.SetBuffered()
+            @m_pairBuffer[@m_pairBufferCount].proxyId1 = pair.proxyId1
+            @m_pairBuffer[@m_pairBufferCount].proxyId2 = pair.proxyId2
+            ++@m_pairBufferCount
+
+        pair.SetRemoved()
+
+        @ValidateBuffer() if (b2BroadPhase.s_validate)
+
  
     # Add a pair and return the new pair. If the pair already exists,
     # no new pair is created and the old one is returned.
@@ -152,7 +176,7 @@ exports.b2PairManager = b2PairManager = class b2PairManager
 
     Find: (proxyId1, proxyId2) ->
         if (proxyId1 > proxyId2)
-            vtemp = proxyId1
+            temp = proxyId1
             proxyId1 = proxyId2
             proxyId2 = temp
 

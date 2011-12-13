@@ -109,11 +109,11 @@ exports.b2World = b2World = class b2World
         stackSize = @m_bodyCount
         stack = new Array(@m_bodyCount)
         stack[k] = null for k in [0...@m_bodyCount]
-		
+
         seed = @m_bodyList
         while seed?
             unless (seed.m_flags & (b2Body.e_staticFlag | b2Body.e_islandFlag | b2Body.e_sleepFlag | b2Body.e_frozenFlag))       		
-           		# Reset island and stack.
+                # Reset island and stack.
                 island.Clear()
                 stackCount = 0
                 stack[stackCount++] = seed
@@ -121,19 +121,19 @@ exports.b2World = b2World = class b2World
 
                 # Perform a depth first search (DFS) on the constraint graph.
                 while stackCount > 0
-                	# Grab the next body off the stack and add it to the island.
-                	b = stack[--stackCount]
-                	island.AddBody(b)
+                    # Grab the next body off the stack and add it to the island.
+                    b = stack[--stackCount]
+                    island.AddBody(b)
 
-                	# Make sure the body is awake.
-                	b.m_flags &= ~b2Body.e_sleepFlag
+                    # Make sure the body is awake.
+                    b.m_flags &= ~b2Body.e_sleepFlag
 
-                	# To keep islands, we don't
-                	# propagate islands across static bodies.
-                	unless b.m_flags & b2Body.e_staticFlag
-                		# Search all contacts connected to this body.
-                		cn = b.m_contactList
-                		while cn?
+                    # To keep islands, we don't
+                    # propagate islands across static bodies.
+                    unless b.m_flags & b2Body.e_staticFlag
+                        # Search all contacts connected to this body.
+                        cn = b.m_contactList
+                        while cn?
                             unless cn.contact.m_flags & b2Contact.e_islandFlag
                                 island.AddContact(cn.contact)
                                 cn.contact.m_flags |= b2Contact.e_islandFlag
@@ -143,21 +143,21 @@ exports.b2World = b2World = class b2World
                                     stack[stackCount++] = other
                                     other.m_flags |= b2Body.e_islandFlag
 
-                		    cn = cn.next
+                            cn = cn.next
 
-                		# Search all joints connect to this body.
-                		jn = b.m_jointList
-                		while jn?
-                			unless jn.joint.m_islandFlag == true
-                				island.AddJoint(jn.joint)
-                				jn.joint.m_islandFlag = true
+                        # Search all joints connect to this body.
+                        jn = b.m_jointList
+                        while jn?
+                            unless jn.joint.m_islandFlag == true
+                                island.AddJoint(jn.joint)
+                                jn.joint.m_islandFlag = true
 
-                				other = jn.other
-                				unless other.m_flags & b2Body.e_islandFlag
-                    				stack[stackCount++] = other
-                    				other.m_flags |= b2Body.e_islandFlag
+                                other = jn.other
+                                unless other.m_flags & b2Body.e_islandFlag
+                                    stack[stackCount++] = other
+                                    other.m_flags |= b2Body.e_islandFlag
 
-                		    jn = jn.next
+                            jn = jn.next
 
                 island.Solve(@step, @m_gravity)
 
@@ -167,16 +167,16 @@ exports.b2World = b2World = class b2World
 
                 # Post solve cleanup.
                 for i in [0...island.m_bodyCount]
-                	b = island.m_bodies[i]
-                	b.m_flags &= ~b2Body.e_islandFlag if (b.m_flags & b2Body.e_staticFlag)
+                    b = island.m_bodies[i]
+                    b.m_flags &= ~b2Body.e_islandFlag if (b.m_flags & b2Body.e_staticFlag)
 
-                	# Handle newly frozen bodies.
-                	if b.IsFrozen() && @m_listener
-                		response = @m_listener.NotifyBoundaryViolated(b)
-                		if (response == b2WorldListener.b2_destroyBody)
-                			@DestroyBody(b)
-                			b = null
-                			island.m_bodies[i] = null
+                    # Handle newly frozen bodies.
+                    if b.IsFrozen() && @m_listener
+                        response = @m_listener.NotifyBoundaryViolated(b)
+                        if (response == b2WorldListener.b2_destroyBody)
+                            @DestroyBody(b)
+                            b = null
+                            island.m_bodies[i] = null
 
 
             seed = seed.m_next

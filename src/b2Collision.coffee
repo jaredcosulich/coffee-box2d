@@ -114,11 +114,11 @@ b2Collision.FindMaxSeparation = (edgeIndex, poly1, poly2, conservative) ->
     return s if (s > 0.0 && conservative == false)
 
     # Check the separation for the neighboring edges.
-    prevEdge = edge - 1 >= 0 ? edge - 1 : count1 - 1
+    prevEdge = if edge - 1 >= 0 then edge - 1 else count1 - 1
     sPrev = b2Collision.EdgeSeparation(poly1, prevEdge, poly2)
     return sPrev if (sPrev > 0.0 && conservative == false)
 
-    nextEdge = edge + 1 < count1 ? edge + 1 : 0
+    nextEdge = if edge + 1 < count1 then edge + 1 else 0
     sNext = b2Collision.EdgeSeparation(poly1, nextEdge, poly2)
     return sNext if (sNext > 0.0 && conservative == false)
 
@@ -140,9 +140,9 @@ b2Collision.FindMaxSeparation = (edgeIndex, poly1, poly2, conservative) ->
 
     while (true)
         if (increment == -1)
-            edge = bestEdge - 1 >= 0 ? bestEdge - 1 : count1 - 1
+            edge = if bestEdge - 1 >= 0 then bestEdge - 1 else count1 - 1
         else
-            edge = bestEdge + 1 < count1 ? bestEdge + 1 : 0
+            edge = if bestEdge + 1 < count1 then bestEdge + 1 else 0
 
         s = b2Collision.EdgeSeparation(poly1, edge, poly2)
         return s if (s > 0.0 && conservative == false)
@@ -156,6 +156,94 @@ b2Collision.FindMaxSeparation = (edgeIndex, poly1, poly2, conservative) ->
     # pointer out
     edgeIndex[0] = bestEdge
     return bestSeparation
+
+b2Collision.FindIncidentEdge = (c, poly1, edge1, poly2) ->
+    count1 = poly1.m_vertexCount
+    vert1s = poly1.m_vertices
+    count2 = poly2.m_vertexCount
+    vert2s = poly2.m_vertices
+
+    # Get the vertices associated with edge1.
+    vertex11 = edge1
+    vertex12 = if edge1 + 1 == count1 then 0 else edge1 + 1
+
+    # Get the normal of edge1.
+    tVec = vert1s[vertex12]
+    normal1Local1X = tVec.x
+    normal1Local1Y = tVec.y
+    tVec = vert1s[vertex11]
+    normal1Local1X -= tVec.x
+    normal1Local1Y -= tVec.y
+    tX = normal1Local1X
+    normal1Local1X = normal1Local1Y
+    normal1Local1Y = -tX
+
+    invLength = 1.0 / Math.sqrt(normal1Local1X*normal1Local1X + normal1Local1Y*normal1Local1Y)
+    normal1Local1X *= invLength
+    normal1Local1Y *= invLength
+    normal1X = normal1Local1X
+    normal1Y = normal1Local1Y
+
+    tX = normal1X
+    tMat = poly1.m_R
+    normal1X = tMat.col1.x * tX + tMat.col2.x * normal1Y
+    normal1Y = tMat.col1.y * tX + tMat.col2.y * normal1Y
+ 
+    normal1Local2X = normal1X
+    normal1Local2Y = normal1Y
+    tMat = poly2.m_R
+    tX = normal1Local2X * tMat.col1.x + normal1Local2Y * tMat.col1.y
+    normal1Local2Y = normal1Local2X * tMat.col2.x + normal1Local2Y * tMat.col2.y
+    normal1Local2X = tX
+ 
+    # Find the incident edge on poly2.
+    vertex21 = 0
+    vertex22 = 0
+    minDot = Number.MAX_VALUE
+    for i in [0...count2]
+        i1 = i
+        i2 = if i + 1 < count2 then i + 1 else 0
+
+        tVec = vert2s[i2]
+        normal2Local2X = tVec.x
+        normal2Local2Y = tVec.y
+        tVec = vert2s[i1]
+        normal2Local2X -= tVec.x
+        normal2Local2Y -= tVec.y
+        tX = normal2Local2X
+        normal2Local2X = normal2Local2Y
+        normal2Local2Y = -tX
+
+        invLength = 1.0 / Math.sqrt(normal2Local2X*normal2Local2X + normal2Local2Y*normal2Local2Y)
+        normal2Local2X *= invLength
+        normal2Local2Y *= invLength
+
+        dot = normal2Local2X * normal1Local2X + normal2Local2Y * normal1Local2Y
+        if (dot < minDot)
+            minDot = dot
+            vertex21 = i1
+            vertex22 = i2
+
+    tClip
+    # Build the clip vertices for the incident edge.
+    tClip = c[0]
+    tVec = tClip.v
+    tVec.SetV(vert2s[vertex21])
+    tVec.MulM(poly2.m_R)
+    tVec.Add(poly2.m_position)
+
+    tClip.id.features.referenceFace = edge1
+    tClip.id.features.incidentEdge = vertex21
+    tClip.id.features.incidentVertex = vertex21
+
+    tClip = c[1]
+    tVec = tClip.v
+    tVec.SetV(vert2s[vertex22])
+    tVec.MulM(poly2.m_R)
+    tVec.Add(poly2.m_position)
+    tClip.id.features.referenceFace = edge1
+    tClip.id.features.incidentEdge = vertex21
+    tClip.id.features.incidentVertex = vertex22
 
 
 b2Collision.b2CollidePolyTempVec = new b2Vec2()

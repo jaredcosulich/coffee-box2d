@@ -69,4 +69,14 @@ exports.b2ShapeDef = b2ShapeDef = class b2ShapeDef
                 massData.center.Set(0.0, 0.0)
                 massData.I = 0.0
 
+    # The collision category bits. Normally you would just set one bit.
+    categoryBits: 0
 
+    # The collision mask bits. This states the categories that this
+    # shape would accept for collision.
+    maskBits: 0
+
+    # Collision groups allow a certain group of objects to never collide (negative)
+    # or always collide (positive). Zero means no collision group. Non-zero group
+    # filtering always wins against the mask bits.
+    groupIndex: 0

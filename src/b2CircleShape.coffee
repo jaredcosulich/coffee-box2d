@@ -64,4 +64,70 @@ exports.b2CircleShape = b2CircleShape = class b2CircleShape extends b2Shape
         	@m_proxyId = b2Pair.b2_nullProxy
 
         @m_body.Freeze() if @m_proxyId == b2Pair.b2_nullProxy
+
+    TestPoint: (p) ->
+        d = new b2Vec2()
+        d.SetV(p)
+        d.Subtract(this.m_position)
+        return b2Math.b2Dot(d, d) <= this.m_radius * this.m_radius;
         
+    Synchronize: (position1, R1, position2, R2) ->
+        @m_R.SetM(R2)
+        @m_position.x = (R2.col1.x * @m_localPosition.x + R2.col2.x * @m_localPosition.y) + position2.x
+        @m_position.y = (R2.col1.y * @m_localPosition.x + R2.col2.y * @m_localPosition.y) + position2.y
+
+        return if (@m_proxyId == b2Pair.b2_nullProxy)
+
+        # Compute an AABB that covers the swept shape (may miss some rotation effect).
+        p1X = position1.x + (R1.col1.x * @m_localPosition.x + R1.col2.x * @m_localPosition.y)
+        p1Y = position1.y + (R1.col1.y * @m_localPosition.x + R1.col2.y * @m_localPosition.y)
+        lowerX = Math.min(p1X, @m_position.x)
+        lowerY = Math.min(p1Y, @m_position.y)
+        upperX = Math.max(p1X, @m_position.x)
+        upperY = Math.max(p1Y, @m_position.y)
+
+        aabb = new b2AABB()
+        aabb.minVertex.Set(lowerX - @m_radius, lowerY - @m_radius)
+        aabb.maxVertex.Set(upperX + @m_radius, upperY + @m_radius)
+
+        broadPhase = @m_body.m_world.m_broadPhase
+        if (broadPhase.InRange(aabb))
+            broadPhase.MoveProxy(@m_proxyId, aabb)
+        else
+            @m_body.Freeze()
+
+    QuickSync: (position, R) ->
+        @m_R.SetM(R)
+        @m_position.x = (R.col1.x * @m_localPosition.x + R.col2.x * @m_localPosition.y) + position.x
+        @m_position.y = (R.col1.y * @m_localPosition.x + R.col2.y * @m_localPosition.y) + position.y
+
+
+    ResetProxy: (broadPhase) ->
+        return if (@m_proxyId == b2Pair.b2_nullProxy)
+
+        proxy = broadPhase.GetProxy(@m_proxyId)
+
+        broadPhase.DestroyProxy(@m_proxyId)
+        proxy = null
+
+        aabb = new b2AABB()
+        aabb.minVertex.Set(@m_position.x - @m_radius, @m_position.y - @m_radius)
+        aabb.maxVertex.Set(@m_position.x + @m_radius, @m_position.y + @m_radius)
+
+        if (broadPhase.InRange(aabb))
+            @m_proxyId = broadPhase.CreateProxy(aabb, @)
+        else
+            @m_proxyId = b2Pair.b2_nullProxy
+
+        @m_body.Freeze() if (@m_proxyId == b2Pair.b2_nullProxy)
+
+
+    Support: (dX, dY, out) ->
+        len = Math.sqrt(dX*dX + dY*dY)
+        dX /= len
+        dY /= len
+        out.Set(@m_position.x + @m_radius*dX, @m_position.y + @m_radius*dY)
+
+    # Local position in parent body
+    m_localPosition: new b2Vec2()
+    m_radius: null
