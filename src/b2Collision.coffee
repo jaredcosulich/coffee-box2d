@@ -419,22 +419,22 @@ b2Collision.b2CollidePolyAndCircle = (manifold, poly, circle, conservative) ->
             separation = s
             normalIndex = i
 
-        # If the center is inside the polygon ...
-        if (separation < Number.MIN_VALUE)
-            manifold.pointCount = 1
-            tVec = poly.m_normals[normalIndex]
-            manifold.normal.x = tMat.col1.x * tVec.x + tMat.col2.x * tVec.y
-            manifold.normal.y = tMat.col1.y * tVec.x + tMat.col2.y * tVec.y
+    # If the center is inside the polygon ...
+    if (separation < Number.MIN_VALUE)
+        manifold.pointCount = 1
+        tVec = poly.m_normals[normalIndex]
+        manifold.normal.x = tMat.col1.x * tVec.x + tMat.col2.x * tVec.y
+        manifold.normal.y = tMat.col1.y * tVec.x + tMat.col2.y * tVec.y
 
-            tPoint = manifold.points[0]
-            tPoint.id.features.incidentEdge = normalIndex
-            tPoint.id.features.incidentVertex = b2Collision.b2_nullFeature
-            tPoint.id.features.referenceFace = b2Collision.b2_nullFeature
-            tPoint.id.features.flip = 0
-            tPoint.position.x = circle.m_position.x - radius * manifold.normal.x
-            tPoint.position.y = circle.m_position.y - radius * manifold.normal.y
-            tPoint.separation = separation - radius
-            return
+        tPoint = manifold.points[0]
+        tPoint.id.features.incidentEdge = normalIndex
+        tPoint.id.features.incidentVertex = b2Collision.b2_nullFeature
+        tPoint.id.features.referenceFace = b2Collision.b2_nullFeature
+        tPoint.id.features.flip = 0
+        tPoint.position.x = circle.m_position.x - radius * manifold.normal.x
+        tPoint.position.y = circle.m_position.y - radius * manifold.normal.y
+        tPoint.separation = separation - radius
+        return
 
     # Project the circle center onto the edge segment.
     vertIndex1 = normalIndex
